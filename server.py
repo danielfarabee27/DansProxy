@@ -222,9 +222,11 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", "0")
         self.end_headers()
 
-    def redirect(self, location, status=302):
+    def redirect(self, location, status=302, cookies=()):
         self.send_response(status)
         self.send_header("Location", location)
+        for cookie in cookies:
+            self.send_header("Set-Cookie", cookie)
         self.send_header("Content-Length", "0")
         self.end_headers()
 
@@ -258,6 +260,14 @@ class Handler(BaseHTTPRequestHandler):
 
         headers = {k: v for k, v in self.headers.items() if k.lower() in FORWARD_REQUEST_HEADERS}
         headers["Accept-Encoding"] = "identity"
+        referer = unproxy(self.headers.get("Referer", ""))
+        if referer:
+            headers["Referer"] = referer
+        if self.headers.get("Origin"):
+            origin_parts = urllib.parse.urlsplit(referer or target)
+            headers["Origin"] = f"{origin_parts.scheme}://{origin_parts.netloc}"
+        if self.headers.get("Cookie"):
+            headers["Cookie"] = self.headers["Cookie"]
         req = urllib.request.Request(target, data=body, headers=headers, method=self.command)
 
         try:
@@ -266,7 +276,8 @@ class Handler(BaseHTTPRequestHandler):
             if 300 <= e.code < 400:
                 location = e.headers.get("Location")
                 if location:
-                    return self.redirect(proxify(location, target), 307 if e.code in (307, 308) else 302)
+                    cookies = [scope_cookie(c, target) for c in e.headers.get_all("Set-Cookie") or []]
+                    return self.redirect(proxify(location, target), 307 if e.code in (307, 308) else 302, cookies)
             resp = e  # 4xx/5xx: still show the site's own error page
         except urllib.error.URLError as e:
             raise ProxyError(502, *describe_network_error(e.reason))
@@ -288,6 +299,8 @@ class Handler(BaseHTTPRequestHandler):
                 k = key.lower()
                 if k in PASSTHROUGH_HEADERS and not (rewriting and k in ("content-type", "etag")):
                     self.send_header(key, value)
+            for cookie in resp.headers.get_all("Set-Cookie") or []:
+                self.send_header("Set-Cookie", scope_cookie(cookie, target))
 
             try:
                 if rewriting:
@@ -312,6 +325,24 @@ class Handler(BaseHTTPRequestHandler):
 
     def log_message(self, fmt, *args):
         print(f"[{self.log_date_time_string()}] {fmt % args}")
+
+
+def unproxy(url):
+    """Turn our /p/<url> address back into the real URL it stands for."""
+    path = urllib.parse.urlsplit(url)
+    if not path.path.startswith("/p/"):
+        return ""
+    try:
+        return parse_target(path.path[3:] + (f"?{path.query}" if path.query else ""))
+    except ProxyError:
+        return ""
+
+
+def scope_cookie(cookie, target):
+    """Pin a site's cookie to that site's /p/ path so sites can't read each other's cookies."""
+    parts = urllib.parse.urlsplit(target)
+    kept = [p for p in cookie.split(";")[1:] if p.strip().split("=")[0].strip().lower() not in ("domain", "path")]
+    return ";".join([cookie.split(";")[0], f" Path=/p/{parts.scheme}://{parts.netloc}/", *kept])
 
 
 def describe_network_error(reason):
