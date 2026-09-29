@@ -6,6 +6,7 @@ Proxied pages are served at /p/<absolute-url>, e.g. /p/https://example.com/
 
 import html
 import ipaddress
+import json
 import os
 import re
 import socket
@@ -26,7 +27,8 @@ STATIC_FILES = {
     "/app.js": ("app.js", "application/javascript; charset=utf-8"),
     "/style.css": ("style.css", "text/css; charset=utf-8"),
 }
-PASSTHROUGH_HEADERS = {"content-type", "cache-control", "content-disposition", "last-modified", "etag"}
+PASSTHROUGH_HEADERS = {"content-type", "cache-control", "content-disposition", "last-modified", "etag",
+                       "content-range", "accept-ranges"}
 FORWARD_REQUEST_HEADERS = {"user-agent", "accept", "accept-language", "content-type", "range"}
 
 
@@ -96,6 +98,27 @@ CSS_IMPORT_RE = re.compile(r"""@import\s+(["'])(.*?)\1""", re.I)
 INTEGRITY_RE = re.compile(r"""\s(?:integrity|nonce)\s*=\s*(["']).*?\1""", re.I | re.S)
 META_CSP_RE = re.compile(r"""<meta[^>]+http-equiv\s*=\s*["']?content-security-policy[^>]*>""", re.I)
 BASE_RE = re.compile(r"""<base[^>]+href\s*=\s*(["'])(.*?)\1""", re.I | re.S)
+HEAD_RE = re.compile(r"<head[^>]*>", re.I)
+
+# Routes URLs that page scripts request at runtime (fetch, XHR, media src) back through the proxy.
+CLIENT_HOOK = """<script>(function(){var B=%s;
+function px(u){try{if(u==null)return u;u=String(u);
+if(/^(data|blob|javascript|about|mailto):/i.test(u)||u.indexOf("/p/")===0||u.indexOf(location.origin+"/p/")===0)return u;
+var a=new URL(u,B).href;return /^https?:/i.test(a)?"/p/"+a:u}catch(e){return u}}
+var f=window.fetch;if(f)window.fetch=function(i,o){try{if(typeof i==="string"||i instanceof URL)i=px(i);
+else if(i&&i.url)i=new Request(px(i.url),i)}catch(e){}return f.call(this,i,o)};
+var x=XMLHttpRequest.prototype.open;XMLHttpRequest.prototype.open=function(m,u){arguments[1]=px(u);return x.apply(this,arguments)};
+[window.HTMLMediaElement,window.HTMLSourceElement].forEach(function(C){if(!C)return;
+var d=Object.getOwnPropertyDescriptor(C.prototype,"src");if(!d||!d.set)return;
+Object.defineProperty(C.prototype,"src",{configurable:true,enumerable:d.enumerable,get:d.get,set:function(v){d.set.call(this,px(v))}})});
+var sa=Element.prototype.setAttribute;Element.prototype.setAttribute=function(n,v){
+if(/^(src|href|poster)$/i.test(n)&&/^(VIDEO|AUDIO|SOURCE|IMG|IFRAME|SCRIPT|LINK|TRACK)$/.test(this.tagName))v=px(v);return sa.call(this,n,v)};
+var wo=window.open;window.open=function(u){if(u)arguments[0]=px(u);return wo.apply(this,arguments)};
+})();</script>"""
+
+
+def client_hook(base):
+    return CLIENT_HOOK % json.dumps(base).replace("</", "<\\/")
 
 
 def rewrite_css(css, base):
@@ -121,8 +144,10 @@ def rewrite_html(doc, base):
                 items.append(" ".join(bits))
         return f"{m.group(1)}{m.group(2)}{', '.join(items)}{m.group(2)}"
 
-    doc = SRCSET_RE.sub(srcset, doc)
-    return rewrite_css(doc, base)
+    doc = rewrite_css(SRCSET_RE.sub(srcset, doc), base)
+    hook = client_hook(base)
+    m = HEAD_RE.search(doc)
+    return doc[:m.end()] + hook + doc[m.end():] if m else hook + doc
 
 
 def detect_charset(content_type, body):
