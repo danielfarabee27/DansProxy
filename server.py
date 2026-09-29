@@ -15,7 +15,7 @@ import urllib.parse
 import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-HOST = os.environ.get("HOST", "127.0.0.1")
+HOST = os.environ.get("HOST", "0.0.0.0" if "PORT" in os.environ else "127.0.0.1")
 PORT = int(os.environ.get("PORT", "8080"))
 TIMEOUT = 20
 MAX_REWRITE_BYTES = 15 * 1024 * 1024
