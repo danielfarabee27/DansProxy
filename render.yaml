@@ -1,13 +1,8 @@
 services:
   - type: web
     name: dansproxy
-    runtime: python
+    runtime: node
     plan: free
-    buildCommand: echo "No dependencies to install"
-    startCommand: python3 server.py
+    buildCommand: npm install
+    startCommand: npm start
     healthCheckPath: /
-    envVars:
-      - key: HOST
-        value: 0.0.0.0
-      - key: PYTHON_VERSION
-        value: 3.12.4

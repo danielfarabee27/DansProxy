@@ -1,40 +1,36 @@
 # DansProxy
 
-A minimal web proxy. Enter a URL, and the page is fetched by the server and shown in the browser.
-
-No dependencies — just Python 3.8+.
+A simple web proxy built on [Scramjet](https://github.com/MercuryWorkshop/scramjet). Enter a URL or
+search terms, and the page loads through the proxy — including JavaScript-heavy sites like YouTube.
 
 ## Run
 
-```sh
-python3 server.py
-```
-
-Open http://localhost:8080.
-
-To use it from a phone or Chromebook on the same Wi‑Fi, listen on all interfaces and visit
-`http://<this-computer's-IP>:8080`:
+Requires Node.js 20+.
 
 ```sh
-HOST=0.0.0.0 python3 server.py
+npm install
+npm start
 ```
 
-`PORT` can also be set (default `8080`).
+Open http://localhost:8080. `PORT` can be set (default `8080`).
 
 ## Deploy to Render
 
-`render.yaml` configures a free Render web service. Push this repo to GitHub, then in Render choose
-**New → Blueprint**, pick the repo, and click **Apply**. The site will be at
-`https://dansproxy.onrender.com` (or a similar name if taken).
+Web service settings: **Language** Node, **Build Command** `npm install`, **Start Command** `npm start`,
+**Instance Type** Free. (`render.yaml` has the same settings for Blueprint deploys.)
 
 ## How it works
 
-- `static/` — the homepage and viewer (URL bar + iframe).
-- `server.py` — serves the UI and proxies pages at `/p/<url>`, e.g. `/p/https://example.com/`.
-  HTML and CSS links are rewritten to go back through the proxy; redirects are followed hop by hop.
-  Requests to local/private network addresses are blocked.
+- `public/` — the homepage and viewer. A service worker (`sw.js`) intercepts every request the
+  proxied page makes and rewrites it through Scramjet.
+- `src/index.js` — serves the UI and Scramjet files, and runs a Wisp server at `/wisp/` that the
+  browser tunnels its traffic through. Local/private network addresses are blocked, and DNS goes
+  through Cloudflare's family filter (1.1.1.3).
 
 ## Limitations
 
-- Sites that build URLs heavily in JavaScript (big web apps, video sites) may partly break.
-- Cookies aren't passed through, so logging into sites won't work.
+- Needs HTTPS (or localhost) because it relies on a service worker.
+- DRM streaming services (Netflix, Disney+, etc.) don't work.
+- All traffic, including video, counts against the host's bandwidth.
+
+Licensed under AGPL-3.0, following Scramjet.

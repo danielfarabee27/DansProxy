@@ -6,14 +6,16 @@
   <meta name="theme-color" content="#0f1115">
   <title>DansProxy</title>
   <link rel="stylesheet" href="/style.css">
+  <script src="/scram/scramjet.all.js"></script>
+  <script src="/baremux/index.js"></script>
 </head>
 <body>
   <main id="home" class="home">
     <div class="card">
       <h1 class="logo">Dans<span>Proxy</span></h1>
-      <p class="tagline">Enter a web address to browse it through the proxy.</p>
+      <p class="tagline">Enter a web address or search the web.</p>
       <form id="home-form" class="url-form" autocomplete="off">
-        <input id="home-input" type="text" inputmode="url" placeholder="example.com"
+        <input id="home-input" type="text" inputmode="url" placeholder="youtube.com or search terms"
                aria-label="Website address" autocapitalize="off" spellcheck="false" autofocus>
         <button type="submit">Go</button>
       </form>
@@ -36,11 +38,8 @@
       <div id="progress" class="progress" hidden><div></div></div>
     </header>
     <p id="bar-error" class="error bar-error" role="alert" hidden></p>
-    <div class="frame-wrap">
+    <div class="frame-wrap" id="frame-wrap">
       <div id="spinner" class="spinner" hidden><div class="ring"></div><span>Loading&hellip;</span></div>
-      <iframe id="frame" title="Proxied page" allowfullscreen
-              allow="fullscreen; autoplay; encrypted-media; picture-in-picture"
-              sandbox="allow-scripts allow-forms allow-same-origin allow-popups allow-downloads"></iframe>
     </div>
   </section>
 
