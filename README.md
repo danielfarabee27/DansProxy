@@ -21,6 +21,12 @@ HOST=0.0.0.0 python3 server.py
 
 `PORT` can also be set (default `8080`).
 
+## Deploy to Render
+
+`render.yaml` configures a free Render web service. Push this repo to GitHub, then in Render choose
+**New → Blueprint**, pick the repo, and click **Apply**. The site will be at
+`https://dansproxy.onrender.com` (or a similar name if taken).
+
 ## How it works
 
 - `static/` — the homepage and viewer (URL bar + iframe).
