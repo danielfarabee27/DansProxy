@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0f1115">
+  <title>DansProxy</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <main id="home" class="home">
+    <div class="card">
+      <h1 class="logo">Dans<span>Proxy</span></h1>
+      <p class="tagline">Enter a web address to browse it through the proxy.</p>
+      <form id="home-form" class="url-form" autocomplete="off">
+        <input id="home-input" type="text" inputmode="url" placeholder="example.com"
+               aria-label="Website address" autocapitalize="off" spellcheck="false" autofocus>
+        <button type="submit">Go</button>
+      </form>
+      <p id="home-error" class="error" role="alert" hidden></p>
+    </div>
+  </main>
+
+  <section id="viewer" class="viewer" hidden>
+    <header class="bar">
+      <a href="/" class="home-btn" id="home-btn" aria-label="Home" title="Home">
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+          <path fill="currentColor" d="M12 3 2 12h3v8h6v-6h2v6h6v-8h3z"/>
+        </svg>
+      </a>
+      <form id="bar-form" class="url-form compact" autocomplete="off">
+        <input id="bar-input" type="text" inputmode="url" aria-label="Website address"
+               autocapitalize="off" spellcheck="false">
+        <button type="submit">Go</button>
+      </form>
+      <div id="progress" class="progress" hidden><div></div></div>
+    </header>
+    <p id="bar-error" class="error bar-error" role="alert" hidden></p>
+    <div class="frame-wrap">
+      <div id="spinner" class="spinner" hidden><div class="ring"></div><span>Loading&hellip;</span></div>
+      <iframe id="frame" title="Proxied page"
+              sandbox="allow-scripts allow-forms allow-same-origin allow-popups allow-downloads"></iframe>
+    </div>
+  </section>
+
+  <script src="/app.js"></script>
+</body>
+</html>
