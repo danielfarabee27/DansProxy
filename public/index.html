@@ -6,6 +6,20 @@
   <meta name="theme-color" content="#0f1115">
   <title>DansProxy</title>
   <link rel="stylesheet" href="/style.css">
+  <script>
+    window.addEventListener("error", function (e) {
+      var t = e.target;
+      var msg = t && t.src
+        ? "Couldn't load " + t.src.replace(location.origin, "") + ". A network filter may be blocking it."
+        : "Error: " + e.message;
+      function show() {
+        var viewer = document.getElementById("viewer");
+        var el = document.getElementById(viewer && !viewer.hidden ? "bar-error" : "home-error");
+        if (el) { el.textContent = msg; el.hidden = false; }
+      }
+      document.readyState === "loading" ? document.addEventListener("DOMContentLoaded", show) : show();
+    }, true);
+  </script>
   <script src="/scram/scramjet.all.js"></script>
   <script src="/baremux/index.js"></script>
 </head>
@@ -14,7 +28,7 @@
     <div class="card">
       <h1 class="logo">Dans<span>Proxy</span></h1>
       <p class="tagline">Enter a web address or search the web.</p>
-      <form id="home-form" class="url-form" autocomplete="off">
+      <form id="home-form" class="url-form" autocomplete="off" onsubmit="return false">
         <input id="home-input" type="text" inputmode="url" placeholder="youtube.com or search terms"
                aria-label="Website address" autocapitalize="off" spellcheck="false" autofocus>
         <button type="submit">Go</button>
@@ -30,7 +44,7 @@
           <path fill="currentColor" d="M12 3 2 12h3v8h6v-6h2v6h6v-8h3z"/>
         </svg>
       </a>
-      <form id="bar-form" class="url-form compact" autocomplete="off">
+      <form id="bar-form" class="url-form compact" autocomplete="off" onsubmit="return false">
         <input id="bar-input" type="text" inputmode="url" aria-label="Website address"
                autocapitalize="off" spellcheck="false">
         <button type="submit">Go</button>

@@ -5,19 +5,37 @@ const spinner = $("spinner");
 const progress = $("progress");
 const SEARCH_URL = "https://duckduckgo.com/?q=";
 
-const { ScramjetController } = $scramjetLoadController();
-const scramjet = new ScramjetController({
-  files: {
-    wasm: "/scram/scramjet.wasm.wasm",
-    all: "/scram/scramjet.all.js",
-    sync: "/scram/scramjet.sync.js",
-  },
-});
-scramjet.init();
-const connection = new BareMux.BareMuxConnection("/baremux/worker.js");
-
+let scramjet = null;
+let connection = null;
 let frame = null;
 let ready = null;
+
+function visibleErrorEl() {
+  return viewer.hidden ? $("home-error") : $("bar-error");
+}
+
+window.addEventListener("error", (e) => {
+  showError(visibleErrorEl(), "Something went wrong: " + (e.message || "unknown error"));
+});
+window.addEventListener("unhandledrejection", (e) => {
+  showError(visibleErrorEl(), "Something went wrong: " + ((e.reason && e.reason.message) || e.reason));
+});
+
+function initScramjet() {
+  if (typeof $scramjetLoadController !== "function" || typeof BareMux === "undefined") {
+    throw new Error("The proxy's files didn't load. A network filter may be blocking this site.");
+  }
+  const { ScramjetController } = $scramjetLoadController();
+  scramjet = new ScramjetController({
+    files: {
+      wasm: "/scram/scramjet.wasm.wasm",
+      all: "/scram/scramjet.all.js",
+      sync: "/scram/scramjet.sync.js",
+    },
+  });
+  scramjet.init();
+  connection = new BareMux.BareMuxConnection("/baremux/worker.js");
+}
 
 function toUrl(input) {
   const value = input.trim();
@@ -51,7 +69,9 @@ async function waitForTransport() {
 }
 
 function setup() {
-  ready ??= (async () => {
+  if (ready) return ready;
+  ready = (async () => {
+    if (!scramjet) initScramjet();
     if (!navigator.serviceWorker) {
       throw new Error("Your browser doesn't support this proxy. Try an up-to-date Chrome, Edge, or Firefox.");
     }
