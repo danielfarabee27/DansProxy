@@ -23,7 +23,9 @@ window.addEventListener("unhandledrejection", (e) => {
 
 function initScramjet() {
   if (typeof $scramjetLoadController !== "function" || typeof BareMux === "undefined") {
-    throw new Error("The proxy's files didn't load. A network filter may be blocking this site.");
+    const chrome = (navigator.userAgent.match(/Chrome\/(\d+)/) || [])[1] || "unknown";
+    const details = (window.loadErrors || []).join(" | ") || "no load errors reported";
+    throw new Error(`The proxy engine didn't start (Chrome ${chrome}). Details: ${details}`);
   }
   const { ScramjetController } = $scramjetLoadController();
   scramjet = new ScramjetController({

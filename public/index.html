@@ -7,11 +7,13 @@
   <title>DansProxy</title>
   <link rel="stylesheet" href="/style.css">
   <script>
+    window.loadErrors = [];
     window.addEventListener("error", function (e) {
       var t = e.target;
       var msg = t && t.src
-        ? "Couldn't load " + t.src.replace(location.origin, "") + ". A network filter may be blocking it."
+        ? "Couldn't load " + t.src.replace(location.origin, "") + ". Something on this device or network is blocking it."
         : "Error: " + e.message;
+      window.loadErrors.push(msg);
       function show() {
         var viewer = document.getElementById("viewer");
         var el = document.getElementById(viewer && !viewer.hidden ? "bar-error" : "home-error");
